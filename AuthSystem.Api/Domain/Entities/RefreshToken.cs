@@ -6,16 +6,23 @@ namespace AuthSystem.Api.Domain.Entities
     public class RefreshToken
     {
         public int Id { get; set; }
+
+        public string TokenIdentifier { get; set; } = default!; // معرف سريع للبحث
         [StringLength(500)]
         public string TokenHash { get; set; } = default!;
+
         public DateTime ExpiresAt { get; set; }
         public bool IsRevoked { get; set; } = false;
+        public DateTime? RevokedAt { get; set; } // وقت الإلغاء
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public bool RememberMe { get; set; }
         [NotMapped]
         public string RawToken { get; set; } = null!;
 
         public int UserId { get; set; }
         public User User { get; set; } = default!;
     }
+
 }
 
 /*

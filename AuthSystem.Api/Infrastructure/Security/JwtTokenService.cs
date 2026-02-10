@@ -17,8 +17,6 @@ namespace AuthSystem.Api.Infrastructure.Security
             _config = config;
         }
 
-  
-
         public string GenerateAccessToken(User user)
         {
         var claims = new List<Claim>
@@ -76,83 +74,41 @@ namespace AuthSystem.Api.Infrastructure.Security
             var randomBytes = RandomNumberGenerator.GetBytes(64);
             var rawToken = Convert.ToBase64String(randomBytes);
 
+            // توليد معرف سريع (GUID) للبحث السريع في قاعدة البيانات
+            var identifier = Guid.NewGuid().ToString("N");
+
             return new RefreshToken
             {
                 UserId = userId,
+                TokenIdentifier = identifier, // معرف سريع
                 RawToken = rawToken,
-                TokenHash = BCrypt.Net.BCrypt.HashPassword(rawToken),
+                TokenHash = BCrypt.Net.BCrypt.HashPassword(rawToken), // تخزين الـ Hash فقط
                 ExpiresAt = rememberMe
-                    ? DateTime.UtcNow.AddDays(
-                        int.Parse(_config["Jwt:RefreshTokenExpirationDays"]!)
-                      )
+                    ? DateTime.UtcNow.AddDays(int.Parse(_config["Jwt:RefreshTokenExpirationDays"]!))
                     : DateTime.UtcNow.AddDays(1),
+                CreatedAt = DateTime.UtcNow,
+                RememberMe = rememberMe
             };
         }
+
+
+        //public RefreshToken GenerateRefreshToken(int userId, bool rememberMe)
+        //{
+        //    var randomBytes = RandomNumberGenerator.GetBytes(64);
+        //    var rawToken = Convert.ToBase64String(randomBytes);
+
+        //    return new RefreshToken
+        //    {
+        //        UserId = userId,
+        //        RawToken = rawToken,
+        //        TokenHash = BCrypt.Net.BCrypt.HashPassword(rawToken),
+        //        ExpiresAt = rememberMe
+        //            ? DateTime.UtcNow.AddDays(
+        //                int.Parse(_config["Jwt:RefreshTokenExpirationDays"]!)
+        //              )
+        //            : DateTime.UtcNow.AddDays(1),
+        //    };
+        //}
+
     }
 }
-
-#region MyRegion
-
-//public string GenerateAccessToken(User user)
-//{
-//    var claims = new List<Claim>
-//    {
-//        new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-//        new Claim(ClaimTypes.Name, user.Name),
-//        new Claim(ClaimTypes.Email, user.Email),
-//    };
-
-//    var key = new SymmetricSecurityKey(
-//        Encoding.UTF8.GetBytes(_config["Jwt:Key"]!)
-//    );
-
-//    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-//    var token = new JwtSecurityToken(
-//        issuer: _config["Jwt:Issuer"],
-//        audience: _config["Jwt:Audience"],
-//        claims: claims,
-//        expires: DateTime.UtcNow.AddMinutes(
-//            int.Parse(_config["Jwt:AccessTokenExpirationMinutes"]!)
-//        ),
-//        signingCredentials: creds
-//    );
-
-//    return new JwtSecurityTokenHandler().WriteToken(token);
-//}
-
-//public string GenerateAccessToken(User user)
-//{
-//    var claims = new List<Claim>
-//    {
-//        new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-//        new Claim(ClaimTypes.Name, user.Name),
-//        new Claim(ClaimTypes.Email, user.Email),
-//    };
-
-
-//    foreach (var role in user.UserRoles.Select(ur => ur.Role.Name))
-//    {
-//        claims.Add(new Claim(ClaimTypes.Role, role));
-//    }
-
-//    var key = new SymmetricSecurityKey(
-//        Encoding.UTF8.GetBytes(_config["Jwt:Key"]!)
-//    );
-
-//    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-//    var token = new JwtSecurityToken(
-//        issuer: _config["Jwt:Issuer"],
-//        audience: _config["Jwt:Audience"],
-//        claims: claims,
-//        expires: DateTime.UtcNow.AddMinutes(
-//            int.Parse(_config["Jwt:AccessTokenExpirationMinutes"]!)
-//        ),
-//        signingCredentials: creds
-//    );
-
-//    return new JwtSecurityTokenHandler().WriteToken(token);
-//}
-
-#endregion

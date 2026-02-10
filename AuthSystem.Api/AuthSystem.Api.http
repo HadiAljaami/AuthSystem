@@ -4,3 +4,20 @@ GET {{AuthSystem.Api_HostAddress}}/weatherforecast/
 Accept: application/json
 
 ###
+
+### Login
+POST https://localhost:7000/api/Auth/login
+Content-Type: application/json
+accept: */*
+
+{
+  "email": "admin@example.com",
+  "password": "Admin123",
+  "rememberMe": true
+}
+
+### Refresh
+POST https://localhost:7000/api/Auth/refresh
+accept: */*
+X-Refresh-Token-Id: 35d3a01bf0284021a70ad3f8317a4e43
+Cookie: 0ZhrtMeGAVs8dP%2Fy3Exj3gRjPE39CO06lXDJBc7HiSlBy1T%2BFJV77XdQMefu62uLYVDlbKYgOgp7eg9cqPwBSw%3D%3D

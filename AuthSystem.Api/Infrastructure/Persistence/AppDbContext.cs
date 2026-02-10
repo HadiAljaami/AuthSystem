@@ -63,6 +63,13 @@ namespace AuthSystem.Api.Infrastructure.Persistence
             modelBuilder.Entity<RefreshToken>()
                 .Property(rt => rt.ExpiresAt)
                 .IsRequired();
+            modelBuilder.Entity<RefreshToken>()
+                .Property(rt => rt.CreatedAt)
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            modelBuilder.Entity<RefreshToken>()
+                .Property(rt => rt.RevokedAt)
+                .IsRequired(false);
 
 
             modelBuilder.Entity<User>()

@@ -4,6 +4,7 @@
     {
         public string AccessToken { get; set; }
         public DateTime ExpiresAt { get; set; }
+        public bool RememberMe { get; set; }
         public UserDto User { get; set; }
     }
 }

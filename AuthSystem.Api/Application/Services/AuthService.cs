@@ -16,7 +16,9 @@ public class AuthService
         _tokenService = tokenService;
     }
 
-    public async Task<(ApiResponse<LoginResponseDto> Response, RefreshToken RefreshToken)> LoginAsync(LoginRequestDto loginRequestDto)
+
+    public async Task<(ApiResponse<LoginResponseDto> Response, RefreshToken RefreshToken)>
+    LoginAsync(LoginRequestDto loginRequestDto)
     {
         var user = await _context.Users
             .Include(u => u.UserRoles)
@@ -25,10 +27,13 @@ public class AuthService
 
         if (user == null || !BCrypt.Net.BCrypt.Verify(loginRequestDto.Password, user.PasswordHash))
         {
-            return (ApiResponse<LoginResponseDto>
-                .FailureResponse("AUTH_INVALID_CREDENTIALS"
-                , "البريد الإلكتروني أو كلمة المرور غير صحيحة")
-                , null!);
+            return (
+                ApiResponse<LoginResponseDto>.FailureResponse(
+                    "AUTH_INVALID_CREDENTIALS",
+                    "البريد الإلكتروني أو كلمة المرور غير صحيحة"
+                ),
+                null!
+            );
         }
 
         var accessToken = _tokenService.GenerateAccessToken(user);
@@ -47,63 +52,70 @@ public class AuthService
                 Name = user.Name,
                 Email = user.Email,
                 Role = user.UserRoles.FirstOrDefault()?.Role.Name ?? "User"
-            }
+            },
+            RememberMe = refreshTokenEntity.RememberMe 
         };
 
-        return (ApiResponse<LoginResponseDto>.SuccessResponse(loginDto, "تم تسجيل الدخول بنجاح"), refreshTokenEntity);
-    }
-
-    public async Task<RefreshToken?> GetValidRefreshTokenAsync(int userId)
-    {
-        return await _context.RefreshTokens
-            .Where(rt => rt.UserId == userId && !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow)
-            .OrderByDescending(rt => rt.ExpiresAt)
-            .FirstOrDefaultAsync();
+        return (
+            ApiResponse<LoginResponseDto>.SuccessResponse(loginDto, "تم تسجيل الدخول بنجاح"),
+            refreshTokenEntity
+        );
     }
 
 
-}
-
-/*
- 
-    public async Task<ApiResponse<LoginResponseDto>> LoginAsync2(LoginRequestDto loginRequestDto)
+    public async Task<(ApiResponse<RefreshTokenResponseDto>, RefreshToken?)>
+    RefreshAsync(string tokenIdentifier, string rawToken)
     {
-        var user = await _context.Users
-            .Include(u => u.UserRoles)
-                .ThenInclude(ur => ur.Role)
-            .FirstOrDefaultAsync(u => u.Email == loginRequestDto.Email);
+        var tokenEntity = await _context.RefreshTokens
+            .Include(rt => rt.User)
+                .ThenInclude(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+            .FirstOrDefaultAsync(rt =>
+                rt.TokenIdentifier == tokenIdentifier &&
+                !rt.IsRevoked &&
+                rt.ExpiresAt > DateTime.UtcNow);
 
-        if (user == null || !BCrypt.Net.BCrypt.Verify(loginRequestDto.Password, user.PasswordHash))
+        if (tokenEntity == null || !BCrypt.Net.BCrypt.Verify(rawToken, tokenEntity.TokenHash))
         {
-            return ApiResponse<LoginResponseDto>.FailureResponse(
-                "AUTH_INVALID_CREDENTIALS",
-                "البريد الإلكتروني أو كلمة المرور غير صحيحة"
+            return (
+                ApiResponse<RefreshTokenResponseDto>.FailureResponse(
+                    "INVALID_REFRESH_TOKEN",
+                    "انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى"
+                ),
+                null
             );
         }
 
-        // توليد التوكن
-        var accessToken = _tokenService.GenerateAccessToken(user);
+        // إلغاء التوكن القديم
+        tokenEntity.IsRevoked = true;
+        tokenEntity.RevokedAt = DateTime.UtcNow;
 
-        // 2️⃣ توليد Refresh Token
-        var refreshTokenEntity = _tokenService.GenerateRefreshToken(user.Id, loginRequestDto.RememberMe);
-        _context.RefreshTokens.Add(refreshTokenEntity);
+        // توليد RefreshToken جديد بنفس قيمة RememberMe المخزنة
+        var newRefreshToken = _tokenService.GenerateRefreshToken(
+            tokenEntity.UserId,
+            tokenEntity.RememberMe
+        );
+
+        _context.RefreshTokens.Add(newRefreshToken);
         await _context.SaveChangesAsync();
 
-
-        var loginDto = new LoginResponseDto
+        var dto = new RefreshTokenResponseDto
         {
-            AccessToken = accessToken,   
+            AccessToken = _tokenService.GenerateAccessToken(tokenEntity.User),
             ExpiresAt = _tokenService.GetAccessTokenExpiry(),
-            User = new UserDto
-            {
-                Id = user.Id,
-                Name = user.Name,
-                Email = user.Email,
-                Role = user.UserRoles.FirstOrDefault()?.Role.Name ?? "User"
-            }
+            RememberMe = newRefreshToken.RememberMe
         };
 
-        return ApiResponse<LoginResponseDto>.SuccessResponse(loginDto, "تم تسجيل الدخول بنجاح");
+        return (
+            ApiResponse<RefreshTokenResponseDto>.SuccessResponse(
+                dto,
+                "تم تحديث الجلسة بنجاح"
+            ),
+            newRefreshToken
+        );
     }
 
- */
+
+
+
+}
