@@ -25,7 +25,7 @@ namespace AuthSystem.Api.Infrastructure.Security
             new Claim(ClaimTypes.Name, user.Name),
             new Claim(ClaimTypes.Email, user.Email),
             };
-
+ 
             // إضافة الأدوار
             foreach (var role in user.UserRoles.Select(ur => ur.Role.Name))
             {
