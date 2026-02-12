@@ -91,6 +91,32 @@ namespace AuthSystem.Api.Controllers
             return Ok(result);
         }
 
+
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            var rawToken = Request.Cookies["refreshToken"];
+            var tokenIdentifier = Request.Headers["X-Refresh-Token-Id"].FirstOrDefault();
+
+            if (string.IsNullOrEmpty(rawToken) || string.IsNullOrEmpty(tokenIdentifier))
+            {
+                return Unauthorized(ApiResponse<object>.FailureResponse(
+                    "SESSION_MISSING",
+                    "لا توجد جلسة نشطة"
+                ));
+            }
+
+            var result = await _authService.LogoutAsync(tokenIdentifier, rawToken);
+
+            if (!result.Success)
+                return Unauthorized(result);
+
+            // حذف الكوكي
+            Response.Cookies.Delete("refreshToken");
+
+            return Ok(result);
+        }
+
     }
 
 

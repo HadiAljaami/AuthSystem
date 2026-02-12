@@ -51,7 +51,7 @@ public class AuthService
                 Id = user.Id,
                 Name = user.Name,
                 Email = user.Email,
-                Role = user.UserRoles.FirstOrDefault()?.Role.Name ?? "User"
+                Roles = user.UserRoles.Select(ur => ur.Role.Name).ToList() // دعم تعدد الأدوار
             },
             RememberMe = refreshTokenEntity.RememberMe 
         };
@@ -114,6 +114,43 @@ public class AuthService
             newRefreshToken
         );
     }
+
+    public async Task<ApiResponse<object>> LogoutAsync(string tokenIdentifier, string rawToken)
+    {
+        var tokenEntity = await _context.RefreshTokens
+            .FirstOrDefaultAsync(rt =>
+                rt.TokenIdentifier == tokenIdentifier &&
+                !rt.IsRevoked);
+
+        if (tokenEntity == null)
+        {
+            return ApiResponse<object>.FailureResponse(
+                "INVALID_SESSION",
+                "الجلسة غير موجودة"
+            );
+        }
+
+        // تحقق أمني
+        if (!BCrypt.Net.BCrypt.Verify(rawToken, tokenEntity.TokenHash))
+        {
+            return ApiResponse<object>.FailureResponse(
+                "INVALID_SESSION",
+                "رمز الجلسة غير صالح"
+            );
+        }
+
+        tokenEntity.IsRevoked = true;
+        tokenEntity.RevokedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return ApiResponse<object>.SuccessResponse(
+            null,
+            "تم تسجيل الخروج بنجاح"
+        );
+    }
+
+
 }
 /*
  - ارسلت رفرش ولكن التوكن القديم مازال لم ينتهي ولم يلغى 

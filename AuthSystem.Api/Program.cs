@@ -4,6 +4,7 @@ using AuthSystem.Api.Controllers;
 using AuthSystem.Api.Infrastructure.Middlewares;
 using AuthSystem.Api.Infrastructure.Persistence;
 using AuthSystem.Api.Infrastructure.Security;
+using AuthSystem.Api.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -41,6 +42,7 @@ namespace AuthSystem.Api
             // Add services to the container.
             builder.Services.AddControllers();
 
+            builder.Services.AddHostedService<RefreshTokenCleanupService>();
 
             builder.Services.AddScoped<ITokenService, JwtTokenService>();
             builder.Services.AddScoped<AuthService>();
@@ -54,6 +56,17 @@ namespace AuthSystem.Api
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+
+
+            //builder.Services.AddAuthentication().AddCookie(options =>
+            //{
+            //    options.Cookie.HttpOnly = true;
+            //    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            //    options.Cookie.SameSite = SameSiteMode.Strict;
+            //});
+
+            //builder.Services.AddAuthentication().AddCookie();a
+            //builder.Services.AddAuthorization();a
             var app = builder.Build();
 
             app.UseMiddleware<GlobalExceptionMiddleware>();
@@ -74,6 +87,7 @@ namespace AuthSystem.Api
 
             app.UseHttpsRedirection();
 
+            //app.UseAuthentication();a
             app.UseAuthorization();
 
             app.MapControllers();

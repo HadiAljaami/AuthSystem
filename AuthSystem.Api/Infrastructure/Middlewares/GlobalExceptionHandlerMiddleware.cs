@@ -35,17 +35,17 @@ namespace AuthSystem.Api.Infrastructure.Middlewares
 
             switch (ex)
             {
-                case ArgumentException ae:
+                case ArgumentException ae: // ملغي 
                     statusCode = StatusCodes.Status400BadRequest;
                     response = ApiResponse<object>.FailureResponse("ARGUMENT_ERROR", ae.Message);
                     break;
 
-                case KeyNotFoundException knf:
+                case KeyNotFoundException knf:  // ملغي 
                     statusCode = StatusCodes.Status404NotFound;
                     response = ApiResponse<object>.FailureResponse("NOT_FOUND", knf.Message);
                     break;
 
-                default:
+                default: //يجب أن لا ترجع الخطأ للمستخدم النهائي
                     statusCode = StatusCodes.Status500InternalServerError;
                     response = ApiResponse<object>.FailureResponse("SERVER_ERROR", "حدث خطأ غير متوقع", new { exception = ex.Message });
                     break;
