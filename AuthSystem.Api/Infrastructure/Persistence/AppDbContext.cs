@@ -14,6 +14,7 @@ namespace AuthSystem.Api.Infrastructure.Persistence
         public DbSet<UserRole> UserRoles => Set<UserRole>();
         public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+        public DbSet<PasswordResetToken> passwordResetTokens => Set<PasswordResetToken>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -86,7 +87,20 @@ namespace AuthSystem.Api.Infrastructure.Persistence
                 .Property(u => u.PasswordHash)
                 .IsRequired();
 
+            modelBuilder.Entity<PasswordResetToken>()
+                .HasOne(p => p.User)
+                .WithMany()
+                .HasForeignKey(p => p.UserId);
 
+            modelBuilder.Entity<PasswordResetToken>()
+                .Property(u => u.CreatedAt)
+                .HasDefaultValueSql("GETUTCDATE()");
+            modelBuilder.Entity<PasswordResetToken>()
+                .Property(u => u.IsUsed)
+                .HasDefaultValue(false);
+
+    //        modelBuilder.Entity<PasswordResetToken>()
+    //.HasIndex(t => t.TokenHash);
 
         }
     }

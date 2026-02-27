@@ -38,6 +38,15 @@ namespace AuthSystem.Api
                 };
             });
 
+            // AddHostedService<T> registers a background service with ASP.NET Core.
+            // - The service runs automatically when the app starts.
+            // - It executes tasks in the background (e.g., cleanup jobs).
+            // - PasswordResetTokenCleanupService deletes expired/used reset tokens.
+            // - RefreshTokenCleanupService deletes or revokes old refresh tokens.
+            // This keeps the database clean and improves security.
+
+            builder.Services.AddHostedService<PasswordResetTokenCleanupService>();
+            builder.Services.AddHostedService<RefreshTokenCleanupService>();
 
             // Add services to the container.
             builder.Services.AddControllers();
@@ -48,9 +57,41 @@ namespace AuthSystem.Api
             builder.Services.AddScoped<AuthService>();
             builder.Services.AddScoped<AuthController>();
 
-            // Swagger
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+            //// Swagger
+            //builder.Services.AddEndpointsApiExplorer();
+            //builder.Services.AddSwaggerGen();
+
+            builder.Services.AddSwaggerGen(options =>
+            {
+                options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "AuthSystem API", Version = "v1" });
+
+                //  ⁄—Ì› ‰Ÿ«„ «·Õ„«Ì… (JWT) œ«Œ· Swagger
+                options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                {
+                    Name = "Authorization",
+                    Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+                    Scheme = "Bearer",
+                    BearerFormat = "JWT",
+                    In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+                    Description = "√œŒ· «· Êﬂ‰ «·–Ì Õ’·  ⁄·ÌÂ „‰ ⁄„·Ì… «·‹ Login „»«‘—…."
+                });
+
+                // Ã⁄· Swagger Ì—”· «· Êﬂ‰ „⁄ ﬂ· ÿ·» »‘ﬂ·  ·ﬁ«∆Ì ⁄‰œ  ›⁄Ì·Â
+                options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+                {
+                    {
+                        new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                        {
+                            Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                            {
+                                Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
+            });
 
             // DbContext
             builder.Services.AddDbContext<AppDbContext>(options =>
@@ -87,7 +128,7 @@ namespace AuthSystem.Api
 
             app.UseHttpsRedirection();
 
-            //app.UseAuthentication();a
+            app.UseAuthentication(); 
             app.UseAuthorization();
 
             app.MapControllers();
